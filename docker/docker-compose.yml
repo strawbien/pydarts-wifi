@@ -1,0 +1,18 @@
+services:
+  pydarts:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: pydarts-wifi
+    restart: unless-stopped
+    ports:
+      - "6080:6080"   # noVNC → navigateur
+      - "8000:8000"   # WebSocket → ESP32
+    environment:
+      - PYDARTS_RESOLUTION=1024x768x24
+      - PYDARTS_WIFI_PORT=8000
+    volumes:
+      - pydarts-scores:/root/.pydarts   # persistance des scores
+
+volumes:
+  pydarts-scores:

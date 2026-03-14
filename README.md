@@ -121,6 +121,59 @@ python test_segments.py
 
 ---
 
+## Docker deployment
+
+Run pyDarts in a container with a browser-accessible interface (no local display required).
+
+### Prerequisites
+
+- [Docker](https://www.docker.com/products/docker-desktop) with Compose
+
+### Quick start
+
+```bash
+docker compose -f docker/docker-compose.yml up --build
+```
+
+Open `http://localhost:6080` in your browser — pyDarts loads automatically.
+
+### Ports
+
+| Port | Usage |
+|------|-------|
+| `6080` | noVNC web interface (pyDarts UI in the browser) |
+| `8000` | WebSocket server (ESP32 connection) |
+
+### Synology NAS
+
+```bash
+git clone https://github.com/Supatoshi/pydarts-wifi.git
+cd pydarts-wifi
+docker compose -f docker/docker-compose.yml up -d
+```
+
+Access via `http://<NAS_IP>:6080`.
+
+Point your ESP32 `config.h` to `WS_HOST = "<NAS_IP>"`.
+
+### Scores persistence
+
+Game scores are stored in a Docker volume (`pydarts-scores`) and survive container restarts.
+
+### Development workflow
+
+Use local Docker for development, NAS for production:
+
+```bash
+# local dev — rebuilds on each change
+docker compose -f docker/docker-compose.yml up --build
+
+# NAS — pull latest and redeploy
+git pull && docker compose -f docker/docker-compose.yml up -d --build
+```
+
+---
+
 ## Project structure
 
 ```
@@ -136,6 +189,11 @@ pydarts-wifi/
 │   ├── config.h              # your credentials (gitignored)
 │   └── config.h.example
 ├── arduino/                  # original Arduino sketches (unmodified)
+├── docker/                   # Docker deployment
+│   ├── Dockerfile
+│   ├── docker-compose.yml
+│   ├── entrypoint.sh
+│   └── index.html            # noVNC auto-connect page
 ├── test_wifi.py              # WebSocket server + simulator
 ├── test_segments.py          # full matrix test checklist
 └── LICENSE                   # GPLv3

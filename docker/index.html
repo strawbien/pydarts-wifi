@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>pyDarts</title>
+  <style>
+    body { margin: 0; background: #1a1a1a; }
+    #screen { width: 100vw; height: 100vh; }
+  </style>
+  <script type="module">
+    import RFB from '/core/rfb.js';
+
+    const host = window.location.hostname;
+    const port = window.location.port;
+    const path = 'websockify';
+    const url  = `ws://${host}:${port}/${path}`;
+
+    const rfb = new RFB(document.getElementById('screen'), url);
+    rfb.scaleViewport = true;
+    rfb.resizeSession = true;
+  </script>
+</head>
+<body>
+  <div id="screen"></div>
+</body>
+</html>
