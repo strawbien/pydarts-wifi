@@ -1,6 +1,6 @@
 # pyDarts WiFi
 
-A fork of [pyDarts](https://sourceforge.net/projects/pydarts/) that adds a **WiFi/WebSocket driver**, allowing an ESP32 to replace the original Arduino USB connection.
+A fork of [pyDarts v1.2.0](https://sourceforge.net/projects/pydarts/files/pydarts/1.2.0/) (2022-08-23) that adds a **WiFi/WebSocket driver**, allowing an ESP32 to replace the original Arduino USB connection.
 
 > Original pyDarts by [@Poilou](https://sourceforge.net/u/poilou/profile/) and [@Diego](https://sourceforge.net/u/diego2/profile/) — licensed under GPLv3.
 
