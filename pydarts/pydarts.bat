@@ -1,0 +1,1 @@
+%PYTHONPATH% pydarts.py %*

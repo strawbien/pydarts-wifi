@@ -1,0 +1,181 @@
+##############
+# TODO
+##############
+On both Network or local game, avoid players with same name
+
+##############
+# Unable to reproduce
+##############
+
+##############
+# RELEASE NOTES
+##############
+
+
+v 1.2.0
+-------
+Buttons are new available on screen. Just use --onscreenbuttons option ! Wonderful, isn't it ?
+New cross-platform text-to-speech dependancy : pip3 install pyttsx3
+All pyDarts is now controlable with 4 buttons. New EXTRABUTTON introduced
+pyGame window is nos resizable by mouse dragging (when windowed) - only on main menu
+Added arrows into game list to facilitate scroll down with a touch screen
+3 new games: Bermuda Triangle, By Fives and Scram Cricket, by @Cory
+Added a "Miss button" (key "m"). Also works to register during initial board setup, by @Cory
+Handicap option for Cricket & Ho One. In Cricket game, it is an option. and should only be used with 4 players! In Ho One game, it is enabled when 'League' option is enabled, and should only be used with 4 players!
+Added an option "masterclosegames" for Master Server, to automatically close opened games at startup
+Bug: Improved Server to allow message bigger than buffer size
+Fully Switched to python3. Do not use python2.7 anymore
+
+v 1.1.1
+-------
+Unrealeased, no bug found in v1.1.0 yet
+
+v 1.1.0
+-------
+Click is now possible in the menus
+Introduced a new web service for keeping record of your stats : pydarts.ch
+Enhanced MasterServer administration
+Corrected many bugs
+Many more but I forgot ;)
+
+v 1.0.1
+------
+Autorefresh introduced when waiting for a game
+Enabled Game options are now displayed during the game
+Added a functionnality in game so when you start a new game straight away, the players are sorted depending of the score of the previous game
+Added a colorset : "grayscale" by @Chrigu
+Added a Master In and Out option in game "Ho One" : you have to start and/or to end Ho one with either a Triple, a Double or a BULL (simple or double)
+In game Ho One, you have now suggestions to finish when possible
+Cleaned a bit the code... So, welcome new bugs !
+
+v 1.0
+-------
+Full UI refactoring - like it or die (...or DIY) !
+UI is now responsive design. It works either on an horizontal display or in a vertical one.
+More translation : Game options are now translated. More languages added.
+Limited players names to 12 characters. Sorry !
+Double-in/Double-out options appeared in game Ho-one. The best ones !
+Advanced option appeared in 321 Zlip ! This great option is like Master mode, 321Zlip take back to 0, but in advanced mode you get a Zlip anyway, when in Master mode you get nothing :(
+pyDarts now listen for keyboard while in game. Hit Space for "Next Player", Escape to abort game, and "b" for backup turn
+pyDarts now listen for mouse while in game and in menus. Double click to toggle windowed/fullscreen mode
+There is now a wizard to create config files (executed if config file does not exists). You are not forced to edit the file by hand if your board is connected at first use anymore
+Switched from hand made language class to a standard gettext class (technical)
+Introduced a new display option "--scoreonlogo" to display hit instead of logo
+A binary will be now furnished for your OS : Linux, Windows and MacOs. Thanks to the pyinstaller project !
+and as always... Many bugs corrected and many bugs introduced !
+
+v 0.9
+-------
+/!\ This is more a stabilisation version. Goals where to clean code, stabilize features already present and correct bugs. Another goal was to ensure perenity of this game by migrating to python3.
+Servers (Master and Game Server) are now tested on Windows
+Full compat with python3 - fully tested on GNU/Linux. Less on Windows
+Full rewrite of network server and client - more reliable :)
+Random handling in Games is more easy than ever !
+A few bugs in games are solved
+GameOptions are not mandatory anymore to make the game usable - Kapital for exemple has no more Game Opts
+All settings can be set two ways : Config file or CLI. If none of them is set, default take place. So there is no more issues with new options.
+When you launch pydarts for the first time, if your dart board is plugged in, pydarts will tr to detect automaticaly your serial port
+Change of CLI options format. Using now long options like this : "--debuglevel=" . Use pydarts.sh --help to see changes in CLI.
+Fusion of some code among Client/Server/MasterServer
+Possibility to use an alternate config file : "--config="
+"nbdarts" is now a game setting. Every game can have a different number of darts to throw per round. Thats an exclusivity pydarts !
+Starting from this version : if you do not play during 1 hour (network only), the server will close connection
+Full rewrite of menus. No Network assistant needed now.
+pyDarts is now localized. It will detect your locale and if a translation exists, it will automatically select it !
+
+Roadmap : 
+--
+
+
+v 0.8.1 (bug correction release)
+-------
+Bug corrected in pydarts_net_assistant.vbs. It was unusable because of lack of a "Then" statement
+Switched default colorset for default config file. Set to bright instead of dark. The background was dark
+Pydarts display now a message when Master Server replies with an empty list. Not a bug, the feature of this version !
+
+v 0.8
+------
+- /!\ Please note that games are not compatible anymore with previous releases
+- /!\ Please update your configuration file (backup the SectionKeys and let recreate the config file - then restore the SectionKeys)
+MAIN CODE ENHANCEMENT : Loads
+MAIN NEW FEATURE OR NEW GAME : Ho One !
+MAIN FEATURE LACK : Added possibility to set volume in config file and as a cli parameter
+MAIN BUG CORRECTED : MS Windows freezing windows bug (missing pygame.event.get)
+Changes :- Improve Input Debug mode. Helpful for first config
+         - Possibility to go higher than max round fixed in Kinito
+         - Network Game assistant for Linux/Windows (bash/zenity dependant - VBS for windows)
+         - Too much pressure issue solved in Kapital
+         - Keep player names for a new game with same amount of players or more
+         - More sound in Cricket (chaussette, closed, X hit round, ...)
+         - 3 Hi score saved now - auto update patch provided!
+	 - Background image is now used for in-game screen
+	 - two color set available : dark and bright. Its a new config parameter !
+	 - Real fullscreen available :) - config option
+	 - New log system. put debuglevel in your config file and choose your debuglevel, from 0 to 3 (0=Debug, 1=Warnings (default), 2=Errors, 3=Fatal errors)
+	 - Espeak used for speech synthetisys. In early stage :/, but it works if installed. It's a new parameter in config file - disable bluethooth since it create a conflict with alsa
+    	 - Better handling of keyboards
+	 - Beta : Master Server to host game creation and simplify network games
+
+v 0.7
+------
+MAIN CODE ENHANCEMENT : Network game
+MAIN NEW FEATURE OR NEW GAME : Practise
+MAIN FEATURE LACK :  Network game
+MAIN BUG CORRECTED : Kinito bug
+MISC : 	- Actually 6 boards officially released ! 
+         - If the sound named like the player exists in user's folder, it will play it on victory, instead of "you"
+
+v 0.6
+------
+MAIN CODE ENHANCEMENT : Change menu display and add a background image
+MAIN NEW FEATURE OR NEW GAME : Kinito with sound
+MAIN FEATURE LACK :  Hi score
+MAIN BUG CORRECTED : Many small bugs
+MISC : 	- 3rd darts board released ! 
+	- Players can be named
+	- Randomize players functionnality
+
+v 0.5
+------
+MAIN CODE ENHANCEMENT : Huge clean in Display code
+MAIN NEW FEATURE OR NEW GAME : "Pneu" Feature | Back Zap in 321 | Kapital Game
+MAIN FEATURE LACK : Works with any resolution the same way ! (tested from 640x480 to 1200x700)
+MAIN BUG CORRECTED : Many
+MISC : First home made game : Kinito (beta) !
+
+v 0.4
+------
+MAIN CODE ENHANCEMENT : Game Methods are now in broken "English"
+MAIN NEW FEATURE OR NEW GAME : ?
+MAIN FEATURE LACK : End game statistics & new game screen at game end
+MAIN BUG CORRECTED : ?
+MISC :
+Small bugs...
+
+v 0.3
+------
+MAIN CODE ENHANCEMENT : Config file in user's directory
+MAIN NEW FEATURE OR NEW GAME : Shanghai and Killer !
+MAIN FEATURE LACK : Works on windows, with probably some bugs, but... it worked !
+MAIN BUG CORRECTED : none
+MISC :
+Added some sounds
+Possibility to change options at the begining of the game (possibility to define options in game)
+Now, adding a game just need to add a .py file in the games folder. No more to do. Optionnaly add sounds or images
+Put games and classes in specific folder and some big cleanup in pydarts.py code
+
+v 0.2
+------
+MAIN CODE ENHANCEMENT : cleanup in pydarts.py and in games also
+MAIN NEW FEATURE OR NEW GAME : Soft BackUpTurn
+MAIN FEATURE LACK CORRECTION : Forward Zap (Zap when you get to high is available)
+MAIN BUG CORRECTED : Correct bug in Cricket Standard who was unplayable
+MISC :
+Add Player logo to tell you when it's time to push player button
+Add Possibility to hit player button to go to next player - Solo mode is still enabled
+Move pics in images folder
+Some little bugs corrected
+
+Long-term Todo-list :
+---------------------
+Possibility to resume game if the serial connection broke up ? Is it simply possible with serial connection ?

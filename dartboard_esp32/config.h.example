@@ -1,0 +1,14 @@
+// config.h.example — copier en config.h et adapter
+// config.h est dans .gitignore (ne pas committer vos credentials)
+
+// ─── WiFi ────────────────────────────────────────────────────────────────────
+const char* WIFI_SSID     = "YOUR_SSID";
+const char* WIFI_PASSWORD = "YOUR_PASSWORD";
+
+// ─── Serveur pyDarts ─────────────────────────────────────────────────────────
+const char* WS_HOST = "192.168.1.45";   // IP du PC ou NAS qui fait tourner pyDarts
+const int   WS_PORT = 8000;
+const char* WS_PATH = "/ws";
+
+// ─── Anti-rebond ─────────────────────────────────────────────────────────────
+const int DEBOUNCE_MS = 500;            // délai en ms entre deux frappes

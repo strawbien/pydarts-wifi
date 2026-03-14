@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mv *.dll *.pyd *.exe *.manifest *.zip pydarts 2)",
+      "Bash(/dev/null dist/)",
+      "Bash(mv Include lib2to3 pygame dist/)",
+      "Bash(mv desktop:*)",
+      "Bash(mv CREDITS README dist/)",
+      "Bash(SRC=\"c:/Users/franc/OneDrive/Documents/Dev/pydarts-wifi/sources/pydarts-source-bfb4ccbde9aed4ffde382f4c9fae44010ec57b09/pydarts-source-bfb4ccbde9aed4ffde382f4c9fae44010ec57b09\")",
+      "Bash(DEST=\"c:/Users/franc/OneDrive/Documents/Dev/pydarts-wifi/pydarts\")",
+      "Bash(cp -r \"$SRC/.\" \"$DEST\")",
+      "Read(//c/Users/franc/OneDrive/Documents/Dev/pydarts-wifi/**)"
+    ]
+  }
+}

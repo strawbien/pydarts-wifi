@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=pyDarts
+GenericName=Darts Game
+Comment=USB Darts Bundle
+Categories=Games;
+Exec=
+Icon=pydarts
+StartupNotify=true
+Terminal=true
+Type=Application

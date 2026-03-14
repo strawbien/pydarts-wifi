@@ -1,0 +1,8 @@
+games/*.pyc
+include/*.pyc
+*.pyc
+web/NOTES
+web/pydarts_web/pydarts.webm
+db/*.db
+pydarts-masterserver/*.db
+NOTES
