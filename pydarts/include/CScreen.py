@@ -918,7 +918,7 @@ class CScreen(pygame.Surface):
                 self.CreateScreen(False, self.Inputs.newresolution)
             elif K == 'TOGGLEFULLSCREEN':
                 self.CreateScreen(True, False)
-            elif K not in ('PLAYERBUTTON', 'GAMEBUTTON', 'single-click'):
+            elif isinstance(K, str) and K not in ('PLAYERBUTTON', 'GAMEBUTTON', 'single-click'):
                 last_segment = K
 
     def GameType(self):
