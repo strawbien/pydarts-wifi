@@ -24,6 +24,7 @@ class WifiDriver:
         self._queue = queue.Queue()
         self._thread = None
         self._loop = None
+        self._client_count = 0
 
     def start(self):
         if websockets is None:
@@ -46,6 +47,7 @@ class WifiDriver:
 
     async def _handler(self, websocket):
         addr = websocket.remote_address
+        self._client_count += 1
         self.Logs.Log("DEBUG", "ESP32 connected from {}".format(addr))
         try:
             async for message in websocket:
@@ -59,6 +61,12 @@ class WifiDriver:
                     self.Logs.Log("DEBUG", "WiFi invalid message: {}".format(message))
         except Exception as e:
             self.Logs.Log("DEBUG", "ESP32 disconnected ({}): {}".format(addr, e))
+        finally:
+            self._client_count -= 1
+
+    def is_connected(self):
+        """Returns True if at least one ESP32 client is connected."""
+        return self._client_count > 0
 
     def read(self):
         """Non-blocking read. Returns segment string or False."""

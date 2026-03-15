@@ -9,7 +9,25 @@
       "Bash(SRC=\"c:/Users/franc/OneDrive/Documents/Dev/pydarts-wifi/sources/pydarts-source-bfb4ccbde9aed4ffde382f4c9fae44010ec57b09/pydarts-source-bfb4ccbde9aed4ffde382f4c9fae44010ec57b09\")",
       "Bash(DEST=\"c:/Users/franc/OneDrive/Documents/Dev/pydarts-wifi/pydarts\")",
       "Bash(cp -r \"$SRC/.\" \"$DEST\")",
-      "Read(//c/Users/franc/OneDrive/Documents/Dev/pydarts-wifi/**)"
+      "Read(//c/Users/franc/OneDrive/Documents/Dev/pydarts-wifi/**)",
+      "Bash(python -c \"import pygame; print\\(''pygame ok''\\)\")",
+      "Bash(python -c \"import serial; print\\(''serial ok''\\)\")",
+      "Bash(python -c \"import websockets; print\\(''websockets ok''\\)\")",
+      "Bash(python -c \"import serial\")",
+      "Bash(python -c \"import websockets\")",
+      "Bash(python -c \"import netifaces\")",
+      "Bash(pip install:*)",
+      "Bash(py -0)",
+      "Read(//c/Users/franc/AppData/Local/Programs/Python/**)",
+      "Bash(py -3.11 -m pip install pygame pyserial websockets netifaces pyttsx3)",
+      "Bash(py -3.11 -m pip install pygame pyserial websockets pyttsx3 netifaces2)",
+      "Bash(py -3.11 -c \"from netifaces import AF_INET; import netifaces as ni; print\\(''netifaces ok''\\)\")",
+      "Bash(py -3.11 -c \"import pygame; import serial; import websockets; import netifaces; import pyttsx3; print\\(''toutes les deps OK''\\)\")",
+      "Bash(py -3.11 pydarts.py --noserial)",
+      "Bash(py -3.11 -m pip install pexpect)",
+      "Bash(py -3.11 -m pip install requests)",
+      "Bash(grep -E \"\\\\.py$|^d\")",
+      "Bash(grep -E \"\\\\.py$\")"
     ]
   }
 }

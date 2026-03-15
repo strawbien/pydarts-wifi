@@ -719,14 +719,77 @@ class CScreen(pygame.Surface):
     #
     # Choose Game Type : Local - Network
     #
+    def TestWifi(self):
+        """Interactive screen to test the WiFi dart board connection."""
+        last_segment = None
+        while True:
+            S  = int(self.res['y'] / 10)
+            X  = int(self.res['x'] / 15)
+            W  = int(self.res['x'] - 2 * X)
+
+            self.DisplayBackground()
+            self.MenuHeader("Test WiFi / Dart Board")
+
+            # --- Connection status ---
+            connected  = (self.Inputs._wifi is not None and self.Inputs._wifi.is_connected())
+            bar_color  = self.ColorSet['green'] if connected else self.ColorSet['red']
+            status_txt = "ESP32 connecte" if connected else "En attente de l'ESP32..."
+            Y = int(self.res['y'] / 4)
+            self.BlitRect(X, Y, W, S, bar_color)
+            sc = self.ScaleTxt(status_txt, W - self.space * 2, S)
+            font = pygame.font.Font(self.defaultfontpath, sc[0])
+            self.screen.blit(font.render(status_txt, True, self.ColorSet['white']),
+                             [X + self.space, Y + self.space + sc[2]])
+
+            # --- Last segment hit ---
+            Y += int(S * 2)
+            seg_txt   = last_segment if last_segment else "-> Frappe un segment..."
+            seg_color = self.ColorSet['green'] if last_segment else self.ColorSet['blue']
+            self.BlitRect(X, Y, W, int(S * 2), seg_color)
+            sc2 = self.ScaleTxt(seg_txt, W - self.space * 2, int(S * 2))
+            font2 = pygame.font.Font(self.defaultfontpath, sc2[0])
+            self.screen.blit(font2.render(seg_txt, True, self.ColorSet['white']),
+                             [X + self.space, Y + self.space + sc2[2]])
+
+            # --- Exit hint ---
+            Y += int(S * 3)
+            hint_txt = "Esc / BACKUPBUTTON pour quitter"
+            sc3 = self.ScaleTxt(hint_txt, W - self.space * 2, int(S * 0.7))
+            font3 = pygame.font.Font(self.defaultfontpath, sc3[0])
+            self.screen.blit(font3.render(hint_txt, True, self.ColorSet['white']),
+                             [X + self.space, Y])
+
+            self.UpdateScreen()
+
+            K = self.Inputs.ListenInputs(
+                [],
+                ['escape', 'BACKUPBUTTON', 'PLAYERBUTTON', 'GAMEBUTTON',
+                 'single-click', 'resize', 'TOGGLEFULLSCREEN'])
+
+            if K in ('escape', 'BACKUPBUTTON'):
+                return
+            elif K == 'resize':
+                self.CreateScreen(False, self.Inputs.newresolution)
+            elif K == 'TOGGLEFULLSCREEN':
+                self.CreateScreen(True, False)
+            elif K not in ('PLAYERBUTTON', 'GAMEBUTTON', 'single-click'):
+                last_segment = K
+
     def GameType(self):
         selected = 1
         while True:
             # MaxSelected depends on conditionnal amount of menus
-            if (str(self.Config.GetValue('SectionAdvanced', 'enable-support')) in ('True','1')):
-                MaxSel=5 
-            else: 
+            support_enabled = str(self.Config.GetValue('SectionAdvanced', 'enable-support')) in ('True', '1')
+            if support_enabled:
+                MaxSel=5
+            else:
                 MaxSel=4
+            wifi_test_sel = None
+            wifi_test_key = None
+            if self.Inputs.WifiMode:
+                MaxSel += 1
+                wifi_test_sel = MaxSel
+                wifi_test_key = 'f' + str(wifi_test_sel - 1)
 
             # Round the selected clock ;)
             if selected > MaxSel:
@@ -934,6 +997,36 @@ class CScreen(pygame.Surface):
                 txt2 = font2.render(txt2, True, self.ColorSet['white'])
                 self.screen.blit(txt2, [TX2, TY2 + ScaledTS2[2]])
 
+            # WiFi test option (only in WiFi mode)
+            if self.Inputs.WifiMode:
+                if selected == wifi_test_sel:
+                    selectedborder = self.ColorSet['green']
+                    selectedbg = self.ColorSet['green']
+                else:
+                    selectedborder = self.ColorSet['black']
+                    selectedbg = self.ColorSet['blue']
+                Y += line_space
+                NY += line_space
+                TY += line_space
+                TY2 += line_space
+                txt1 = wifi_test_key
+                ScaledTS1 = self.ScaleTxt(txt1, S - self.space * 2, S)
+                TS1 = ScaledTS1[0]
+                font1 = pygame.font.Font(self.defaultfontpath, TS1)
+                txt2 = 'Test WiFi / Dart Board'
+                ScaledTS2 = self.ScaleTxt(txt2, NS - self.space * 2, S)
+                TS2 = ScaledTS2[0]
+                font2 = pygame.font.Font(self.defaultfontpath, TS2)
+                self.BlitRect(X, Y, S, S, selectedbg)
+                self.BlitRect(NX, NY, NS, S, self.ColorSet['black'])
+                pygame.draw.rect(self.screen, self.ColorSet['black'], (X, Y, S, S), BB)
+                pygame.draw.rect(self.screen, selectedborder, (NX, NY, NS, S), BB)
+                ClickZones[wifi_test_key] = (NX, NY, NS, S)
+                textF = font1.render(txt1, True, self.ColorSet['black'])
+                self.screen.blit(textF, [TX, TY + ScaledTS1[2]])
+                txt2 = font2.render(txt2, True, self.ColorSet['white'])
+                self.screen.blit(txt2, [TX2, TY2 + ScaledTS2[2]])
+
             ################
             # Update screen
             self.UpdateScreen()
@@ -959,8 +1052,10 @@ class CScreen(pygame.Surface):
                 return 'netmaster'
             if K == 'f3':
                 return 'netmanual'
-            if K == 'f4':
+            if K == 'f4' and support_enabled:
                 self.Support()
+            if wifi_test_key and K == wifi_test_key:
+                self.TestWifi()
             if K == 'resize':  # Resize screen
                 self.CreateScreen(False, self.Inputs.newresolution)
             if K == 'TOGGLEFULLSCREEN':  # Toggle fullscreen
