@@ -11,3 +11,6 @@ __pycache__/
 
 # Credentials ESP32 (ne pas committer)
 dartboard_esp32/config.h
+
+# Claude Code local settings
+.claude/settings.local.json
