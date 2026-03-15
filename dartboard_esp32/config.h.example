@@ -1,14 +1,15 @@
 // config.h.example — copier en config.h et adapter
 // config.h est dans .gitignore (ne pas committer vos credentials)
 
-// ─── WiFi ────────────────────────────────────────────────────────────────────
-const char* WIFI_SSID     = "YOUR_SSID";
-const char* WIFI_PASSWORD = "YOUR_PASSWORD";
-
-// ─── Serveur pyDarts ─────────────────────────────────────────────────────────
-const char* WS_HOST = "192.168.1.45";   // IP du PC ou NAS qui fait tourner pyDarts
+// ─── WebSocket ───────────────────────────────────────────────────────────────
 const int   WS_PORT = 8000;
 const char* WS_PATH = "/ws";
 
+// ─── Fallback serveur (optionnel) ────────────────────────────────────────────
+// Décommenter si la découverte mDNS ne fonctionne pas sur votre réseau.
+// L'ESP32 utilisera cette IP si pyDarts n'est pas trouvé automatiquement.
+//
+// #define WS_HOST_FALLBACK "192.168.1.45"
+
 // ─── Anti-rebond ─────────────────────────────────────────────────────────────
-const int DEBOUNCE_MS = 500;            // délai en ms entre deux frappes
+const int DEBOUNCE_MS = 500;

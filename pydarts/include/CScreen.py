@@ -719,6 +719,152 @@ class CScreen(pygame.Surface):
     #
     # Choose Game Type : Local - Network
     #
+    def Settings(self):
+        """Settings screen — browse and edit configuration options."""
+
+        SETTINGS = [
+            {'type': 'header',  'label': '-- Connexion --'},
+            {'type': 'cycle',   'label': 'Connexion',          'section': 'SectionGlobals',  'key': 'connection_type',  'values': ['serial', 'wifi']},
+            {'type': 'numeric', 'label': 'Port WiFi',           'section': 'SectionGlobals',  'key': 'wifi_port',        'min': 1024, 'max': 65535, 'step': 1},
+        ]
+        if self.Inputs.WifiMode:
+            SETTINGS.append({'type': 'action', 'label': 'Test Dart Board', 'action': self.TestWifi})
+        SETTINGS += [
+            {'type': 'header',  'label': '-- Affichage --'},
+            {'type': 'bool',    'label': 'Boutons ecran',       'section': 'SectionGlobals',  'key': 'onscreenbuttons'},
+            {'type': 'bool',    'label': 'Plein ecran',         'section': 'SectionGlobals',  'key': 'fullscreen'},
+            {'type': 'cycle',   'label': 'Theme couleurs',      'section': 'SectionGlobals',  'key': 'colorset',         'values': ['clear', 'dark', 'grayscale']},
+            {'type': 'bool',    'label': 'Score sur logo',      'section': 'SectionGlobals',  'key': 'scoreonlogo'},
+            {'type': 'header',  'label': '-- Son --'},
+            {'type': 'numeric', 'label': 'Volume (%)',          'section': 'SectionGlobals',  'key': 'soundvolume',      'min': 0,    'max': 100,   'step': 10},
+            {'type': 'cycle',   'label': 'Synthese vocale',     'section': 'SectionAdvanced', 'key': 'speech',           'values': ['pyttsx3', 'none']},
+            {'type': 'header',  'label': '-- Jeu --'},
+            {'type': 'numeric', 'label': 'Duree animation',     'section': 'SectionAdvanced', 'key': 'animationduration', 'min': 0,    'max': 50,    'step': 1},
+            {'type': 'numeric', 'label': 'Delai lancers (ms)',  'section': 'SectionGlobals',  'key': 'releasedartstime',  'min': 0,    'max': 5000,  'step': 100},
+            {'type': 'cycle',   'label': 'Jeux disponibles',    'section': 'SectionAdvanced', 'key': 'games',            'values': ['official', 'all']},
+        ]
+
+        selectable = [i for i, s in enumerate(SETTINGS) if s['type'] != 'header']
+        sel_pos = 0
+
+        def get_raw(item):
+            return str(self.Config.GetValue(item['section'], item['key']))
+
+        def display_val(item, raw):
+            if item['type'] == 'bool':
+                return 'Actif' if raw in ('1', 'True', 'true') else 'Inactif'
+            return raw
+
+        def shift(item, raw, direction):
+            if item['type'] == 'bool':
+                return '0' if raw in ('1', 'True', 'true') else '1'
+            if item['type'] == 'cycle':
+                vals = item['values']
+                try:    idx = vals.index(raw)
+                except: idx = -1
+                return vals[(idx + direction) % len(vals)]
+            if item['type'] == 'numeric':
+                try:    v = int(raw)
+                except: v = int(item['min'])
+                v = max(item['min'], min(item['max'], v + direction * item['step']))
+                return str(v)
+            return raw
+
+        while True:
+            self.DisplayBackground()
+            self.MenuHeader('Parametres')
+
+            X  = int(self.res['x'] / 15)
+            W  = int(self.res['x'] - 2 * X)
+            SH = int(self.res['y'] / 20)
+            Y  = int(self.res['y'] / 7)
+            sel_global = selectable[sel_pos]
+            ClickZones = {}
+
+            for idx, item in enumerate(SETTINGS):
+                if Y + SH > self.res['y'] - SH * 2:
+                    break
+                if item['type'] == 'header':
+                    sc = self.ScaleTxt(item['label'], W - self.space * 2, SH)
+                    font = pygame.font.Font(self.defaultfontpath, sc[0])
+                    self.BlitRect(X, Y, W, SH, self.ColorSet['blue'])
+                    self.screen.blit(font.render(item['label'], True, self.ColorSet['white']),
+                                     [X + self.space, Y + sc[2]])
+                elif item['type'] == 'action':
+                    is_sel = (idx == sel_global)
+                    bg = self.ColorSet['green'] if is_sel else self.ColorSet['blue']
+                    sc_a = self.ScaleTxt(item['label'], W - self.space * 4, SH)
+                    self.BlitRect(X, Y, W, SH, bg)
+                    pygame.draw.rect(self.screen, self.ColorSet['grey'], (X, Y, W, SH), 1)
+                    self.screen.blit(pygame.font.Font(self.defaultfontpath, sc_a[0]).render(
+                        item['label'], True, self.ColorSet['white']),
+                        [X + self.space * 2 + sc_a[1], Y + sc_a[2]])
+                    ClickZones['s|{}'.format(idx)] = (X, Y, W, SH)
+                else:
+                    raw     = get_raw(item)
+                    val_txt = display_val(item, raw)
+                    is_sel  = (idx == sel_global)
+                    LW = int(W * 0.6)
+                    VX = X + LW + self.space
+                    VW = W - LW - self.space
+                    bg_l = self.ColorSet['green'] if is_sel else self.ColorSet['black']
+                    bg_v = self.ColorSet['green'] if is_sel else self.ColorSet['blue']
+                    # Label
+                    sc_l = self.ScaleTxt(item['label'], LW - self.space * 2, SH)
+                    self.BlitRect(X, Y, LW, SH, bg_l)
+                    pygame.draw.rect(self.screen, self.ColorSet['grey'], (X, Y, LW, SH), 1)
+                    self.screen.blit(pygame.font.Font(self.defaultfontpath, sc_l[0]).render(
+                        item['label'], True, self.ColorSet['white']), [X + self.space, Y + sc_l[2]])
+                    # Value
+                    sc_v = self.ScaleTxt(val_txt, VW - self.space * 4, SH)
+                    self.BlitRect(VX, Y, VW, SH, bg_v)
+                    pygame.draw.rect(self.screen, self.ColorSet['grey'], (VX, Y, VW, SH), 1)
+                    self.screen.blit(pygame.font.Font(self.defaultfontpath, sc_v[0]).render(
+                        val_txt, True, self.ColorSet['white']), [VX + self.space * 2, Y + sc_v[2]])
+                    ClickZones['s|{}'.format(idx)] = (X, Y, W, SH)
+                Y += SH + self.space
+
+            # Hint
+            hint = 'Haut/Bas: naviguer  |  Gauche/Droite ou +/-: modifier  |  Esc: quitter'
+            sc_h = self.ScaleTxt(hint, self.res['x'] - self.space * 4, int(SH * 0.7))
+            self.screen.blit(pygame.font.Font(self.defaultfontpath, sc_h[0]).render(
+                hint, True, self.ColorSet['white']), [self.space * 2, self.res['y'] - SH])
+
+            self.UpdateScreen()
+
+            K = self.Inputs.ListenInputs(
+                ['arrows', 'math'],
+                ['escape', 'BACKUPBUTTON', 'PLAYERBUTTON', 'GAMEBUTTON',
+                 'enter', 'space', 'single-click', 'resize', 'TOGGLEFULLSCREEN'])
+
+            Clicked = self.IsClicked(ClickZones, K)
+            if Clicked and Clicked.startswith('s|'):
+                cidx = int(Clicked.split('|')[1])
+                if cidx in selectable:
+                    sel_pos = selectable.index(cidx)
+                    K = 'right'
+
+            if K in ('down', 'PLAYERBUTTON', 'space'):
+                sel_pos = (sel_pos + 1) % len(selectable)
+            elif K == 'up':
+                sel_pos = (sel_pos - 1) % len(selectable)
+            elif K in ('right', '+', 'enter', 'GAMEBUTTON'):
+                item = SETTINGS[selectable[sel_pos]]
+                if item['type'] == 'action':
+                    item['action']()
+                else:
+                    self.Config.WriteValue(item['section'], item['key'], shift(item, get_raw(item), 1))
+            elif K in ('left', '-'):
+                item = SETTINGS[selectable[sel_pos]]
+                if item['type'] != 'action':
+                    self.Config.WriteValue(item['section'], item['key'], shift(item, get_raw(item), -1))
+            elif K in ('escape', 'BACKUPBUTTON'):
+                return
+            elif K == 'resize':
+                self.CreateScreen(False, self.Inputs.newresolution)
+            elif K == 'TOGGLEFULLSCREEN':
+                self.CreateScreen(True, False)
+
     def TestWifi(self):
         """Interactive screen to test the WiFi dart board connection."""
         last_segment = None
@@ -784,12 +930,6 @@ class CScreen(pygame.Surface):
                 MaxSel=5
             else:
                 MaxSel=4
-            wifi_test_sel = None
-            wifi_test_key = None
-            if self.Inputs.WifiMode:
-                MaxSel += 1
-                wifi_test_sel = MaxSel
-                wifi_test_key = 'f' + str(wifi_test_sel - 1)
 
             # Round the selected clock ;)
             if selected > MaxSel:
@@ -997,35 +1137,15 @@ class CScreen(pygame.Surface):
                 txt2 = font2.render(txt2, True, self.ColorSet['white'])
                 self.screen.blit(txt2, [TX2, TY2 + ScaledTS2[2]])
 
-            # WiFi test option (only in WiFi mode)
-            if self.Inputs.WifiMode:
-                if selected == wifi_test_sel:
-                    selectedborder = self.ColorSet['green']
-                    selectedbg = self.ColorSet['green']
-                else:
-                    selectedborder = self.ColorSet['black']
-                    selectedbg = self.ColorSet['blue']
-                Y += line_space
-                NY += line_space
-                TY += line_space
-                TY2 += line_space
-                txt1 = wifi_test_key
-                ScaledTS1 = self.ScaleTxt(txt1, S - self.space * 2, S)
-                TS1 = ScaledTS1[0]
-                font1 = pygame.font.Font(self.defaultfontpath, TS1)
-                txt2 = 'Test WiFi / Dart Board'
-                ScaledTS2 = self.ScaleTxt(txt2, NS - self.space * 2, S)
-                TS2 = ScaledTS2[0]
-                font2 = pygame.font.Font(self.defaultfontpath, TS2)
-                self.BlitRect(X, Y, S, S, selectedbg)
-                self.BlitRect(NX, NY, NS, S, self.ColorSet['black'])
-                pygame.draw.rect(self.screen, self.ColorSet['black'], (X, Y, S, S), BB)
-                pygame.draw.rect(self.screen, selectedborder, (NX, NY, NS, S), BB)
-                ClickZones[wifi_test_key] = (NX, NY, NS, S)
-                textF = font1.render(txt1, True, self.ColorSet['black'])
-                self.screen.blit(textF, [TX, TY + ScaledTS1[2]])
-                txt2 = font2.render(txt2, True, self.ColorSet['white'])
-                self.screen.blit(txt2, [TX2, TY2 + ScaledTS2[2]])
+            # Settings hint at bottom
+            hint_settings = 'BACKUP: Parametres'
+            TS_hint = max(8, int(S * 0.35))
+            font_hint = pygame.font.Font(self.defaultfontpath, TS_hint)
+            txt_hint = font_hint.render(hint_settings, True, self.ColorSet['white'])
+            hint_y = int(self.res['y'] - S)
+            hint_x = int(self.res['x'] / 15)
+            ClickZones['BACKUPBUTTON'] = (hint_x, hint_y, int(self.res['x'] * 0.5), TS_hint + 4)
+            self.screen.blit(txt_hint, [hint_x, hint_y])
 
             ################
             # Update screen
@@ -1054,15 +1174,15 @@ class CScreen(pygame.Surface):
                 return 'netmanual'
             if K == 'f4' and support_enabled:
                 self.Support()
-            if wifi_test_key and K == wifi_test_key:
-                self.TestWifi()
+            if K == 'BACKUPBUTTON':
+                self.Settings()
             if K == 'resize':  # Resize screen
                 self.CreateScreen(False, self.Inputs.newresolution)
             if K == 'TOGGLEFULLSCREEN':  # Toggle fullscreen
                 self.CreateScreen(True, False)
             if K == '+' or K == '-':  # Sound volume
                 self.AdjustVolume(K)
-            if K == 'escape': #  or K=='BACKUPBUTTON'
+            if K == 'escape':
                 sys.exit(0)
 
     #

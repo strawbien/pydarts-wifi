@@ -423,6 +423,28 @@ class CConfig:
 #  Break if option is required, return false otherwise
 #
 
+   def WriteValue(self, section, key, value):
+      """Update a single value in the config file and in memory."""
+      try:
+         config = configparser.RawConfigParser()
+         config.optionxform = str
+         config.read(self.pathfile)
+         if not config.has_section(section):
+            config.add_section(section)
+         config.set(section, key, str(value))
+         with open(self.pathfile, 'w') as f:
+            for sec in config.sections():
+               f.write('[{}]\n'.format(sec))
+               for k, v in config.items(sec):
+                  f.write('{}:{}\n'.format(k, v))
+               f.write('\n')
+         if section not in self.ConfigFile:
+            self.ConfigFile[section] = {}
+         self.ConfigFile[section][key.lower()] = str(value)
+         self.Logs.Log("DEBUG", "Config updated: [{}] {}:{}".format(section, key, value))
+      except Exception as e:
+         self.Logs.Log("WARNING", "Could not write config value: {}".format(e))
+
    def GetValue(self,Section,v,req=True):
       if v==None or Section==None:
          return False

@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # ─── Dépendances Python ──────────────────────────────────────────────────────
-RUN pip install pygame pyserial websockets netifaces2 pyttsx3 requests pexpect
+RUN pip install pygame pyserial websockets netifaces2 pyttsx3 requests pexpect zeroconf
 
 # ─── Code source ─────────────────────────────────────────────────────────────
 WORKDIR /app

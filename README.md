@@ -41,14 +41,16 @@ Soft-tip dart board (reconditioned, original PCB removed)
 
 ### Python (server side)
 ```bash
-pip install pygame pyserial websockets netifaces2 pyttsx3 requests
+pip install pygame pyserial websockets netifaces2 pyttsx3 requests zeroconf
 ```
 Python 3.9–3.11 recommended.
 
 ### Arduino (ESP32 firmware)
 Install via Arduino Library Manager:
+- **WiFiManager** by tzapu
 - **WebSockets** by Markus Sattler
 - **ArduinoJson** by Benoit Blanchon
+- **ESPmDNS** — built into the ESP32 Arduino framework (no install needed)
 
 Board: `ESP32 Dev Module`
 
@@ -62,17 +64,21 @@ Board: `ESP32 Dev Module`
 cp dartboard_esp32/config.h.example dartboard_esp32/config.h
 ```
 
-Edit `config.h` with your WiFi credentials and the IP of your pyDarts server:
-
-```cpp
-const char* WIFI_SSID     = "your-ssid";
-const char* WIFI_PASSWORD = "your-password";
-const char* WS_HOST       = "192.168.1.x";  // IP of the machine running pyDarts
-const int   WS_PORT       = 8000;
-const char* WS_PATH       = "/ws";
-```
+`config.h` only needs `WS_PORT`, `WS_PATH` and `DEBOUNCE_MS` — WiFi credentials are configured via the captive portal (no reflash needed).
 
 Flash `dartboard_esp32/dartboard_esp32.ino` to your ESP32.
+
+**First boot — WiFi setup:**
+1. The ESP32 creates a WiFi network called **`pyDarts-Setup`**
+2. Connect to it from your phone or PC
+3. Open `192.168.4.1` in a browser, enter your WiFi credentials, click Save
+4. The ESP32 reconnects and saves the credentials permanently
+
+**Switch WiFi network** — hold `BTN_OPTIONS` at boot to reset credentials and re-open the portal.
+
+**Server discovery** — pyDarts is found automatically via mDNS (`_pydarts._tcp`). Switch between PC and NAS by just starting pyDarts on the target machine — the ESP32 finds it automatically.
+
+> **Fallback**: if mDNS doesn't work on your network, uncomment `WS_HOST_FALLBACK` in `config.h`.
 
 ### 2. pyDarts config
 
