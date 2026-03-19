@@ -2709,6 +2709,188 @@ class CScreen(pygame.Surface):
         self.prop_limit = 1
 
     #
+    # V2 responsive layout constants
+    # Orientation-aware: landscape (scores left, game right) or portrait (scores top/bottom, game center)
+    #
+    def DefineConstantsV2(self, nbplayers=None):
+        # Base constants (shared with V1)
+        self.space = int(self.res['y'] / 200)
+        self.alpha = 210
+        self.defaultfontpath = 'fonts/Purisa.ttf'
+        self.animation = 5
+
+        # --- Orientation ---
+        self.v2_landscape = self.res['x'] >= self.res['y']
+
+        # --- Square game area: largest square that fits ---
+        self.v2_sq = min(self.res['x'], self.res['y'])
+
+        if self.v2_landscape:
+            # Left strip: score panels | Right square: game area
+            panel_w = self.res['x'] - self.v2_sq
+            panel_h = self.res['y']
+            scores_h = int(panel_h * 0.38)
+            round_h  = panel_h - scores_h
+
+            self.v2_panel_rect  = pygame.Rect(0,       0,        panel_w, panel_h)
+            self.v2_scores_rect = pygame.Rect(0,       0,        panel_w, scores_h)
+            self.v2_round_rect  = pygame.Rect(0,       scores_h, panel_w, round_h)
+            self.v2_game_rect   = pygame.Rect(self.res['x'] - self.v2_sq, 0, self.v2_sq, self.v2_sq)
+        else:
+            # Portrait: thin scores band top | square game center | round details bottom
+            rem_h    = self.res['y'] - self.v2_sq
+            scores_h = max(int(rem_h * 0.35), 48)
+            round_h  = rem_h - scores_h
+            game_y   = scores_h
+
+            self.v2_scores_rect = pygame.Rect(0,              0,              self.res['x'], scores_h)
+            self.v2_game_rect   = pygame.Rect(0,              game_y,         self.v2_sq,    self.v2_sq)
+            self.v2_round_rect  = pygame.Rect(0,              game_y + self.v2_sq, self.res['x'], round_h)
+            self.v2_panel_rect  = None  # No single panel in portrait
+
+        # --- Per-player row heights ---
+        n = max(nbplayers, 1) if nbplayers else 4
+        self.v2_score_row_h = max(int(self.v2_scores_rect.height / (n + 1)), 14)
+        self.v2_round_row_h = max(int(self.v2_round_rect.height  / (n + 1)), 18)
+
+    #
+    # V2 - Draw the total scores panel (top-left in landscape, top band in portrait)
+    # players     : list of CPlayer objects
+    # actualplayer: index of the active player
+    #
+    def DrawScoresPanel(self, players, actualplayer):
+        r = self.v2_scores_rect
+        sp = self.space
+        row_h = self.v2_score_row_h
+
+        # Panel background
+        self.BlitRect(r.x, r.y, r.width, r.height, self.ColorSet['black'], False, False, 200)
+
+        # Header row
+        header_h = row_h
+        self.BlitRect(r.x, r.y, r.width, header_h, self.ColorSet['blue'], False, False, 220)
+        scaled = self.ScaleTxt('SCORES', r.width - sp * 2, header_h - sp * 2)
+        if scaled:
+            font = pygame.font.Font(self.defaultfontpath, scaled[0])
+            txt  = font.render('SCORES', True, self.ColorSet['white'])
+            self.screen.blit(txt, (r.x + scaled[1], r.y + scaled[2]))
+
+        # One row per player
+        name_w  = int(r.width * 0.60)
+        score_w = r.width - name_w
+
+        for p in players:
+            row_y = r.y + header_h + p.ident * row_h
+
+            # Active player: highlighted background
+            if p.ident == actualplayer:
+                self.BlitRect(r.x, row_y, r.width, row_h - sp, self.ColorSet['grey'], False, False, 160)
+
+            # Colored player indicator (thin left bar using player color)
+            bar_w = max(sp * 2, 4)
+            color = p.GetColor() if p.GetColor() else self.ColorSet['grey']
+            self.BlitRect(r.x, row_y, bar_w, row_h - sp, color, False, False, 255)
+
+            # Player name
+            name = p.PlayerName[:12]
+            scaled = self.ScaleTxt(name, name_w - bar_w - sp * 2, row_h - sp * 2)
+            if scaled:
+                font = pygame.font.Font(self.defaultfontpath, scaled[0])
+                txt  = font.render(name, True, self.ColorSet['white'])
+                self.screen.blit(txt, (r.x + bar_w + sp + scaled[1], row_y + scaled[2]))
+
+            # Total score (right-aligned)
+            score_txt = str(p.GetScore())
+            scaled = self.ScaleTxt(score_txt, score_w - sp * 2, row_h - sp * 2)
+            if scaled:
+                font = pygame.font.Font(self.defaultfontpath, scaled[0])
+                txt  = font.render(score_txt, True, self.ColorSet['yellow'])
+                self.screen.blit(txt, (r.x + name_w + scaled[1], row_y + scaled[2]))
+
+    #
+    # V2 - Draw the current round detail panel (bottom-left in landscape, bottom band in portrait)
+    # players      : list of CPlayer objects
+    # actualplayer : index of the active player
+    # round_totals : optional dict {player_ident: int} — sum of the round per player
+    #
+    def DrawRoundPanel(self, players, actualplayer, round_totals=None):
+        r = self.v2_round_rect
+        sp = self.space
+        row_h = self.v2_round_row_h
+
+        # Panel background (slightly different shade)
+        self.BlitRect(r.x, r.y, r.width, r.height, self.ColorSet['black'], False, False, 180)
+
+        # Header row
+        header_h = row_h
+        self.BlitRect(r.x, r.y, r.width, header_h, self.ColorSet['blue'], False, False, 220)
+        label = 'MANCHE EN COURS'
+        scaled = self.ScaleTxt(label, r.width - sp * 2, header_h - sp * 2)
+        if scaled:
+            font = pygame.font.Font(self.defaultfontpath, scaled[0])
+            txt  = font.render(label, True, self.ColorSet['white'])
+            self.screen.blit(txt, (r.x + scaled[1], r.y + scaled[2]))
+
+        # Column widths: name | dart1 | dart2 | dart3 | total
+        has_total = round_totals is not None
+        name_w  = int(r.width * 0.28)
+        dart_w  = int(r.width * 0.17)
+        total_w = r.width - name_w - dart_w * 3 if has_total else 0
+
+        for p in players:
+            row_y = r.y + header_h + p.ident * row_h
+
+            # Active player highlight
+            if p.ident == actualplayer:
+                self.BlitRect(r.x, row_y, r.width, row_h - sp, self.ColorSet['grey'], False, False, 160)
+
+            # Colored left bar
+            bar_w = max(sp * 2, 4)
+            color = p.GetColor() if p.GetColor() else self.ColorSet['grey']
+            self.BlitRect(r.x, row_y, bar_w, row_h - sp, color, False, False, 255)
+
+            # Player name (short)
+            name = p.PlayerName[:8]
+            scaled = self.ScaleTxt(name, name_w - bar_w - sp * 2, row_h - sp * 2)
+            if scaled:
+                font = pygame.font.Font(self.defaultfontpath, scaled[0])
+                txt  = font.render(name, True, self.ColorSet['white'])
+                self.screen.blit(txt, (r.x + bar_w + sp + scaled[1], row_y + scaled[2]))
+
+            # 3 dart slots
+            for dart_i in range(3):
+                slot_x = r.x + name_w + dart_i * dart_w
+                # Slot background (subtle border)
+                self.BlitRect(slot_x + sp, row_y + sp, dart_w - sp * 2, row_h - sp * 2,
+                              self.ColorSet['black'], False, False, 120)
+
+                dart_label = ''
+                dart_color = 'white'
+                if dart_i < len(p.LSTColVal):
+                    val = p.LSTColVal[dart_i]
+                    dart_label = str(val[0]) if val[0] != '' else ''
+                    if len(val) >= 3 and val[2]:
+                        dart_color = val[2]
+
+                if dart_label:
+                    scaled = self.ScaleTxt(dart_label, dart_w - sp * 4, row_h - sp * 4)
+                    if scaled:
+                        font = pygame.font.Font(self.defaultfontpath, scaled[0])
+                        color_rgb = self.ColorSet.get(dart_color, self.ColorSet['white'])
+                        txt = font.render(dart_label, True, color_rgb)
+                        self.screen.blit(txt, (slot_x + sp + scaled[1], row_y + sp + scaled[2]))
+
+            # Round total (cumul)
+            if has_total and p.ident in round_totals:
+                total_x = r.x + name_w + dart_w * 3
+                total_txt = str(round_totals[p.ident])
+                scaled = self.ScaleTxt(total_txt, total_w - sp * 2, row_h - sp * 2)
+                if scaled:
+                    font = pygame.font.Font(self.defaultfontpath, scaled[0])
+                    txt  = font.render(total_txt, True, self.ColorSet['green'])
+                    self.screen.blit(txt, (total_x + scaled[1], row_y + scaled[2]))
+
+    #
     # Display name of the player if given, Player X otherwise
     #
     def DisplayPlayerName(self, y, couleur, ident, actualplayer, playername=None):
@@ -3304,6 +3486,110 @@ class CScreen(pygame.Surface):
             self.InfoMessage([self.Lang.lang('version-mismatch')], 8000, None, 'middle', 'big')
         else:
             self.Logs.Log('DEBUG','Version of client ({}) and server ({}) are supposed to be compatible. Continuing...'.format(self.Config.pyDartsVersion, serverversion))
+
+    #
+    # V2 - Draw the game area square (background + content)
+    # render_callback : optional callable(game_rect) for graphical games
+    #                   if None, draws the dartboard
+    # hints           : optional list of segment keys to highlight e.g. ['T20','D16']
+    #
+    def DrawGameArea(self, render_callback=None, hints=None):
+        r = self.v2_game_rect
+        # Background
+        self.BlitRect(r.x, r.y, r.width, r.height, self.ColorSet['black'], False, False, 220)
+        # Border
+        pygame.draw.rect(self.screen, self.ColorSet['grey'], r, max(self.space, 1))
+
+        if render_callback:
+            render_callback(r)
+        else:
+            self.DrawDartboardV2(hints=hints)
+
+    #
+    # V2 - Full dartboard centered in self.v2_game_rect
+    # hints : list of segment keys ['T20','D5','SB','DB'] to highlight in yellow
+    #
+    def DrawDartboardV2(self, hints=None):
+        r   = self.v2_game_rect
+        sq  = min(r.width, r.height)
+        cx  = r.x + r.width  // 2
+        cy  = r.y + r.height // 2
+        sp  = self.space
+
+        hints = hints or []
+
+        # Segment order around the board (clockwise from top: 20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5)
+        ORDER = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5]
+        # Radii as fraction of sq/2
+        R_BULL_IN   = sq * 0.020   # double bull (50)
+        R_BULL_OUT  = sq * 0.048   # single bull (25)
+        R_TRIPLE_IN = sq * 0.270
+        R_TRIPLE_OUT= sq * 0.320
+        R_DOUBLE_IN = sq * 0.430
+        R_DOUBLE_OUT= sq * 0.480
+
+        W_SIMPLE1   = max(int((R_DOUBLE_IN  - R_TRIPLE_OUT) * 0.9), 2)
+        W_SIMPLE2   = max(int((R_TRIPLE_IN  - R_BULL_OUT)   * 0.9), 2)
+        W_TRIPLE    = max(int((R_TRIPLE_OUT - R_TRIPLE_IN)  * 0.9), 2)
+        W_DOUBLE    = max(int((R_DOUBLE_OUT - R_DOUBLE_IN)  * 0.9), 2)
+
+        def seg_color(base_a, base_b, key, i):
+            if key in hints:
+                return self.ColorSet['yellow']
+            return base_a if i % 2 == 0 else base_b
+
+        def arc_rect(radius):
+            return (cx - radius, cy - radius, radius * 2, radius * 2)
+
+        def angle(idx):
+            # Angle in radians for segment start/end (idx = 0..19)
+            base = math.radians(90 + 9)   # top of board offset
+            step = math.radians(18)
+            return base - idx * step
+
+        # Draw simple (inner + outer) for each segment
+        for i, num in enumerate(ORDER):
+            a1, a2 = angle(i), angle(i + 1)
+            color_s = seg_color(self.ColorSet['grey2'], self.ColorSet['black'], 'S%d' % num, i)
+            pygame.draw.arc(self.screen, color_s,
+                            arc_rect(R_DOUBLE_IN),  a2, a1, W_SIMPLE1)
+            pygame.draw.arc(self.screen, color_s,
+                            arc_rect(R_TRIPLE_IN),  a2, a1, W_SIMPLE2)
+
+        # Draw triple ring
+        for i, num in enumerate(ORDER):
+            a1, a2 = angle(i), angle(i + 1)
+            color_t = seg_color(self.ColorSet['green'], self.ColorSet['red'], 'T%d' % num, i)
+            pygame.draw.arc(self.screen, color_t,
+                            arc_rect(R_TRIPLE_OUT), a2, a1, W_TRIPLE)
+
+        # Draw double ring
+        for i, num in enumerate(ORDER):
+            a1, a2 = angle(i), angle(i + 1)
+            color_d = seg_color(self.ColorSet['green'], self.ColorSet['red'], 'D%d' % num, i)
+            pygame.draw.arc(self.screen, color_d,
+                            arc_rect(R_DOUBLE_OUT), a2, a1, W_DOUBLE)
+
+        # Bull
+        bull_color = self.ColorSet['yellow'] if 'SB' in hints or '25' in hints else self.ColorSet['orange']
+        pygame.draw.circle(self.screen, bull_color, (cx, cy), int(R_BULL_OUT))
+        db_color = self.ColorSet['yellow'] if 'DB' in hints or '50' in hints else self.ColorSet['red']
+        pygame.draw.circle(self.screen, db_color,   (cx, cy), int(R_BULL_IN))
+
+        # Segment numbers (outside double ring)
+        font_size = max(int(sq * 0.045), 10)
+        try:
+            font = pygame.font.Font(self.defaultfontpath, font_size)
+        except Exception:
+            font = pygame.font.SysFont(None, font_size)
+
+        R_LABEL = R_DOUBLE_OUT + sq * 0.045
+        for i, num in enumerate(ORDER):
+            mid_angle = (angle(i) + angle(i + 1)) / 2
+            lx = int(cx + R_LABEL * math.cos(mid_angle))
+            ly = int(cy - R_LABEL * math.sin(mid_angle))
+            lbl = font.render(str(num), True, self.ColorSet['white'])
+            self.screen.blit(lbl, (lx - lbl.get_width() // 2, ly - lbl.get_height() // 2))
 
     #
     # Draw board Methods
