@@ -392,6 +392,9 @@ while True:
                 NetStatus = None  # reset Network status if you leave network game
             elif Game == 'escape' and NetStatus is None:
                 menu = 'players'
+            elif Game == 'MiniGolf':
+                myDisplay.PlaySound('goodchoice')
+                menu = 'minigolf'
             else:
                 myDisplay.PlaySound('goodchoice')
                 ChoosedGame = __import__("games.{}".format(Game), fromlist=["games"])
@@ -517,6 +520,71 @@ while True:
             except Exception as e:
                 Logs.Log("WARNING", "Unable to reach Master Server {} on port {} in order to remove game".format(
                     Config.GetValue('SectionGlobals', 'masterserver'), Config.GetValue('SectionGlobals', 'masterport')))
+
+        ########
+        # MINIGOLF — custom 60fps game loop with V2 layout
+        ########
+        if GT == 'local' and menu == 'minigolf':
+            import pygame
+            from games.MiniGolf import MiniGolfGame
+
+            # Build player objects (lightweight wrappers around names + colors)
+            class _MGPlayer:
+                def __init__(self, ident, name, color):
+                    self.ident      = ident
+                    self.PlayerName = name
+                    self.score      = 0
+                    self.couleur    = color
+                    self.LSTColVal  = [('', 'txt', None)] * 3
+                def GetScore(self):  return int(self.score)
+                def GetColor(self):  return self.couleur
+
+            mg_colors = list(myDisplay.ColorSet.values())
+            mg_players = [_MGPlayer(i, LoPl[i], mg_colors[i % len(mg_colors)])
+                          for i in range(len(LoPl))]
+
+            mg_game = MiniGolfGame(mg_players)
+            myDisplay.DefineConstantsV2(nbplayers=len(mg_players))
+
+            clock = pygame.time.Clock()
+            running = True
+            while running:
+                try:
+                    dt = min(clock.tick(60) / 1000.0, 1.0 / 30.0)  # cap to avoid first-frame jumps
+
+                    # --- Poll input (non-blocking) ---
+                    hit = Inputs.PollInput()
+                    if hit == 'GAMEBUTTON':
+                        running = False
+                    elif hit and hit not in ('PLAYERBUTTON', 'BACKUPBUTTON') \
+                             and not mg_game.is_animating:
+                        result = mg_game.process_segment(hit)
+                        Logs.Log("DEBUG", "MiniGolf hit {} → {}".format(hit, result.get('event')))
+
+                    # --- Sync score panel data ---
+                    for p in mg_players:
+                        p.score = sum(mg_game.scores[p.ident])
+                        n = mg_game.shots[p.ident]
+                        for i in range(3):
+                            p.LSTColVal[i] = (
+                                'coup {}'.format(i+1) if i < n else '', 'txt', None)
+
+                    # --- Render ---
+                    myDisplay.screen.fill((20, 20, 20))
+                    myDisplay.DrawScoresPanel(mg_players, mg_game.active_player_ident)
+                    myDisplay.DrawRoundPanel(mg_players,  mg_game.active_player_ident)
+                    colorset = myDisplay.ColorSet
+                    myDisplay.DrawGameArea(
+                        render_callback=lambda r: mg_game.render(
+                            myDisplay.screen, r, colorset, dt))
+                    pygame.display.flip()
+                except Exception as _mg_err:
+                    import traceback
+                    print("=== MiniGolf EXCEPTION ===")
+                    traceback.print_exc()
+                    running = False
+
+            menu = 'gametype'
 
     ######## END OF MENU LOOP ##########
 

@@ -182,6 +182,42 @@ class CInput():
       return -1
 
 
+   def PollInput(self):
+      """Non-blocking input poll for continuous render loops (e.g. MiniGolf).
+      Returns a dart segment key ('T20', 'SB', ...), a special key
+      ('escape', 'PLAYERBUTTON', ...), or None if nothing available."""
+      # WiFi dart hit
+      if self.WifiMode:
+         result = self.Wifi_Read()
+         if result:
+            return result
+      elif not self.SerialBypass:
+         result = self.Serial_Read('game')
+         if result:
+            return result
+      # Keyboard / pygame events (non-blocking)
+      import pygame
+      for event in pygame.event.get():
+         if event.type == pygame.QUIT:
+            return 'GAMEBUTTON'
+         if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+               return 'GAMEBUTTON'
+            if event.key == pygame.K_SPACE:
+               return 'PLAYERBUTTON'
+            # Numpad / number keys → segment shortcuts for testing
+            _key_seg = {
+               pygame.K_KP8: 'S20', pygame.K_KP2: 'S3',
+               pygame.K_KP4: 'S11', pygame.K_KP6: 'S6',
+               pygame.K_KP7: 'S19', pygame.K_KP9: 'S1',
+               pygame.K_KP1: 'S15', pygame.K_KP3: 'S4',
+               pygame.K_b:   'SB',  pygame.K_t:   'T20',
+               pygame.K_d:   'D20',
+            }
+            if event.key in _key_seg:
+               return _key_seg[event.key]
+      return None
+
    def ListenInputs(self,ktype=['num','alpha','fx','arrows'], specials = ['enter','tab','backspace','left shift','escape','space','double-click','single-click','resize'] ,WaitFor=[], context='menus'):
       SerialInput = False
       pyGameInput = -1

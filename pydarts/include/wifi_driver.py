@@ -5,6 +5,7 @@ import json
 import queue
 import socket
 import threading
+import time
 
 try:
     import websockets
@@ -34,6 +35,8 @@ class WifiDriver:
         self._client_count = 0
         self._zeroconf = None
         self._mdns_info = None
+        self._server_ok = False      # True once the WebSocket server is bound
+        self._start_error = None     # Error message if server failed to start
 
     def start(self):
         if websockets is None:
@@ -41,7 +44,17 @@ class WifiDriver:
             return False
         self._thread = threading.Thread(target=self._run, daemon=True)
         self._thread.start()
-        self.Logs.Log("DEBUG", "WiFi WebSocket server started on port {}".format(self.port))
+        # Wait up to 2 s to confirm the server actually bound to the port
+        deadline = time.time() + 2.0
+        while time.time() < deadline:
+            if self._server_ok or self._start_error:
+                break
+            time.sleep(0.05)
+        if self._start_error:
+            self.Logs.Log("FATAL", "WiFi WebSocket server failed to start: {}".format(self._start_error))
+            return False
+        if not self._server_ok:
+            self.Logs.Log("WARNING", "WiFi WebSocket server start timed out — continuing anyway")
         self._start_mdns()
         return True
 
@@ -77,12 +90,22 @@ class WifiDriver:
     def _run(self):
         self._loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self._loop)
-        self._loop.run_until_complete(self._serve())
+        try:
+            self._loop.run_until_complete(self._serve())
+        except Exception as e:
+            self._start_error = str(e)
+            self.Logs.Log("FATAL", "WebSocket server thread died: {}".format(e))
 
     async def _serve(self):
-        async with websockets.serve(self._handler, "0.0.0.0", self.port):
-            self.Logs.Log("DEBUG", "WebSocket listening on 0.0.0.0:{}".format(self.port))
-            await asyncio.Future()  # run forever
+        try:
+            async with websockets.serve(self._handler, "0.0.0.0", self.port):
+                self._server_ok = True
+                self.Logs.Log("DEBUG", "WebSocket listening on 0.0.0.0:{}".format(self.port))
+                await asyncio.Future()  # run forever
+        except OSError as e:
+            self._start_error = str(e)
+            self.Logs.Log("FATAL", "Cannot bind WebSocket server on port {}: {}".format(self.port, e))
+            raise
 
     async def _handler(self, websocket):
         addr = websocket.remote_address
@@ -106,6 +129,10 @@ class WifiDriver:
     def is_connected(self):
         """Returns True if at least one ESP32 client is connected."""
         return self._client_count > 0
+
+    def is_server_running(self):
+        """Returns True if the WebSocket server successfully bound to its port."""
+        return self._server_ok
 
     def read(self):
         """Non-blocking read. Returns segment string or False."""

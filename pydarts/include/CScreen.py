@@ -117,6 +117,8 @@ class CScreen(pygame.Surface):
         self.InitResolution(newresolution)
         # Define screen constants (depends on resolution)
         self.DefineConstants()
+        # Invalidate ScaleTxt cache (font sizes depend on box dimensions which depend on resolution)
+        self._scaletxt_cache = {}
         # Tell pygame it is fullscreen if it is
         if self.fullscreen:
             self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)  # Set fullscreen with actual resolution
@@ -210,6 +212,12 @@ class CScreen(pygame.Surface):
     def ScaleTxt(self, txt, boxX, boxY, startingtextsize=None, dafont=None, divider=1, step=0.1):
         if dafont == None: dafont = self.defaultfontpath
         if startingtextsize == None: startingtextsize = boxY
+        # Cache: avoid recomputing font size for the same text/box (called every frame)
+        _key = (str(txt), int(boxX), int(boxY), startingtextsize, dafont, divider)
+        if not hasattr(self, '_scaletxt_cache'):
+            self._scaletxt_cache = {}
+        if _key in self._scaletxt_cache:
+            return self._scaletxt_cache[_key]
         while True:
             TxtSize = int(startingtextsize / divider)
             font = pygame.font.Font(dafont, TxtSize)
@@ -222,7 +230,9 @@ class CScreen(pygame.Surface):
                 spaceX = int((boxX - fontsize[0]) / 2)
                 spaceY = int((boxY - fontsize[1]) / 2)
                 # Returns Best text size, horizontal space needed to center text, vertical space to center text
-                return [TxtSize, spaceX, spaceY]
+                result = [TxtSize, spaceX, spaceY]
+                self._scaletxt_cache[_key] = result
+                return result
             else:
                 divider += step
 
@@ -877,15 +887,45 @@ class CScreen(pygame.Surface):
             self.MenuHeader("Test WiFi / Dart Board")
 
             # --- Connection status ---
+            server_ok  = (self.Inputs._wifi is not None and self.Inputs._wifi.is_server_running())
             connected  = (self.Inputs._wifi is not None and self.Inputs._wifi.is_connected())
-            bar_color  = self.ColorSet['green'] if connected else self.ColorSet['red']
-            status_txt = "ESP32 connecte" if connected else "En attente de l'ESP32..."
+            if not server_ok:
+                bar_color  = self.ColorSet['red']
+                status_txt = "ERREUR: serveur WebSocket non demarre (port occupe?)"
+            elif connected:
+                bar_color  = self.ColorSet['green']
+                status_txt = "ESP32 connecte"
+            else:
+                bar_color  = self.ColorSet['yellow']
+                status_txt = "Serveur OK - En attente de l'ESP32..."
             Y = int(self.res['y'] / 4)
             self.BlitRect(X, Y, W, S, bar_color)
             sc = self.ScaleTxt(status_txt, W - self.space * 2, S)
             font = pygame.font.Font(self.defaultfontpath, sc[0])
             self.screen.blit(font.render(status_txt, True, self.ColorSet['white']),
                              [X + self.space, Y + self.space + sc[2]])
+
+            # --- Server address ---
+            Y += int(S * 1.2)
+            if self.Inputs._wifi is not None:
+                import socket as _sock
+                try:
+                    _s = _sock.socket(_sock.AF_INET, _sock.SOCK_DGRAM)
+                    _s.connect(("8.8.8.8", 80))
+                    _ip = _s.getsockname()[0]
+                    _s.close()
+                except Exception:
+                    _ip = "?"
+                port = self.Inputs._wifi.port
+                addr_txt = "Serveur: ws://{}:{}/ws".format(_ip, port)
+            else:
+                addr_txt = ""
+            if addr_txt:
+                sc_a = self.ScaleTxt(addr_txt, W - self.space * 2, int(S * 0.7))
+                self.screen.blit(pygame.font.Font(self.defaultfontpath, sc_a[0]).render(
+                    addr_txt, True, self.ColorSet['grey']),
+                    [X + self.space, Y])
+                Y += int(S * 0.9)
 
             # --- Last segment hit ---
             Y += int(S * 2)
